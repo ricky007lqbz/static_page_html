@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服装成本计算器 - 专业服装生产价格估算工具</title>
+    <script src="https://cdn.tailwindcss.com/3.3.3"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            color: #2d3748;
+            overflow-x: hidden;
+        }
+
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 28px 0 rgba(31, 38, 135, 0.2);
+        }
+
+        .blob {
+            position: absolute;
+            background: linear-gradient(135deg, #4299e1 0%, #9f7aea 100%);
+            filter: blur(60px);
+            opacity: 0.3;
+            border-radius: 50%;
+            animation: blob-movement 15s infinite linear;
+            z-index: -2;
+        }
+
+        @keyframes blob-movement {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(5%, -10%) scale(1.3); }
+            66% { transform: translate(-15%, 5%) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        .highlight-text {
+            position: relative;
+            display: inline-block;
+        }
+
+        .highlight-text::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background-color: rgba(99, 102, 241, 0.2);
+            z-index: -1;
+        }
+
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+
+        .shadow-glow {
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5);
+        }
+
+        .form-input {
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: scale(1.02);
+        }
+
+        .option-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .option-card:hover {
+            border-color: #4f46e5;
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+
+        .option-card.selected {
+            border-color: #4f46e5;
+            background-color: rgba(79, 70, 229, 0.1);
+        }
+
+        /* 移动端导航菜单样式 */
+        .mobile-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            padding: 1rem;
+            margin: 0.5rem;
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            transform-origin: top;
+            transform: scaleY(0);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 100;
+        }
+
+        .mobile-menu.active {
+            transform: scaleY(1);
+            opacity: 1;
+        }
+
+        /* 计算结果动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-animation {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        /* 数量选择器样式 */
+        .quantity-input {
+            width: 80px;
+            padding: 4px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .quantity-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+
+        /* 大小选择按钮样式 */
+        .size-option {
+            padding: 4px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .size-option:hover {
+            border-color: #4f46e5;
+        }
+
+        .size-option.selected {
+            background-color: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+        
+        /* 卫衣类型选择样式 */
+        .hoodie-type-options {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        
+        .hoodie-type-options.show {
+            display: grid;
+        }
+        
+        .hoodie-type-option {
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+        
+        .hoodie-type-option:hover {
+            border-color: #4f46e5;
+        }
+        
+        .hoodie-type-option.selected {
+            background-color: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="blob w-96 h-96 top-0 left-0"></div>
+    <div class="blob w-80 h-80 bottom-0 right-0"></div>
+
+    <!-- 导航条 -->
+    <nav class="glassmorphism sticky top-0 z-50 p-4 mb-8" id="mainNav">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-transparent bg-clip-text">
+                <i class="fas fa-tshirt mr-2"></i>服装成本计算器
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="#calculator" class="text-gray-600 hover:text-indigo-600 transition-colors">成本计算</a>
+                <a href="#breakdown" class="text-gray-600 hover:text-indigo-600 transition-colors">成本明细</a>
+            </div>
+            <button class="md:hidden text-gray-600 focus:outline-none" id="mobileMenuButton" aria-label="导航菜单">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <!-- 移动端导航菜单 -->
+            <div class="mobile-menu md:hidden" id="mobileMenu">
+                <a href="#calculator" class="text-gray-600 hover:text-indigo-600 transition-colors flex items-center">
+                    <i class="fas fa-calculator mr-3 text-indigo-500"></i>成本计算
+                </a>
+                <a href="#breakdown" class="text-gray-600 hover:text-indigo-600 transition-colors flex items-center">
+                    <i class="fas fa-list-ul mr-3 text-indigo-500"></i>成本明细
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 头部横幅 -->
+    <header class="container mx-auto py-16 px-4 md:px-8 relative">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">
+                服装成本计算器
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-600 mb-8">专业、准确、实时的服装生产价格估算工具</p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <div class="stat-card glassmorphism p-4 text-center w-32">
+                    <div class="text-sm text-gray-500">实时计算</div>
+                    <div class="text-2xl font-bold text-indigo-600"><i class="fas fa-bolt"></i></div>
+                </div>
+                <div class="stat-card glassmorphism p-4 text-center w-32">
+                    <div class="text-sm text-gray-500">精准估算</div>
+                    <div class="text-2xl font-bold text-indigo-600"><i class="fas fa-bullseye"></i></div>
+                </div>
+                <div class="stat-card glassmorphism p-4 text-center w-32">
+                    <div class="text-sm text-gray-500">多种选项</div>
+                    <div class="text-2xl font-bold text-indigo-600"><i class="fas fa-tshirt"></i></div>
+                </div>
+                <div class="stat-card glassmorphism p-4 text-center w-32">
+                    <div class="text-sm text-gray-500">明细分析</div>
+                    <div class="text-2xl font-bold text-indigo-600"><i class="fas fa-chart-pie"></i></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 计算器部分 -->
+    <section id="calculator" class="container mx-auto py-12 px-4 md:px-8">
+        <div class="glassmorphism p-8 mb-16">
+            <h2 class="text-3xl font-bold mb-8 flex items-center">
+                <div class="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white mr-3">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                服装成本计算
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 左侧计算表单 -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- 衣服类型选择 -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 flex items-center">
+                            <i class="fas fa-tshirt text-indigo-500 mr-2"></i>
+                            衣服类型
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4" id="clothingTypeOptions">
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 text-center cursor-pointer" data-type="tshirt">
+                                <img src="https://s.coze.cn/image/zLNTCA6xwzU/" alt="T恤" class="mx-auto mb-2 w-16 h-16 object-contain">
+                                <p class="font-medium">T恤</p>
+                            </div>
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 text-center cursor-pointer relative" data-type="hoodie">
+                                <img src="https://s.coze.cn/image/baxr3yXYu1c/" alt="卫衣" class="mx-auto mb-2 w-16 h-16 object-contain">
+                                <p class="font-medium">卫衣</p>
+                                <div class="hoodie-type-options" id="hoodieTypeOptions">
+                                    <div class="hoodie-type-option" data-subtype="zipper">拉链卫衣</div>
+                                    <div class="hoodie-type-option" data-subtype="round">圆领卫衣</div>
+                                </div>
+                            </div>
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 text-center cursor-pointer" data-type="jeans">
+                                <img src="https://s.coze.cn/image/LPTLkK1r1B0/" alt="牛仔裤" class="mx-auto mb-2 w-16 h-16 object-contain">
+                                <p class="font-medium">牛仔裤</p>
+                            </div>
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 text-center cursor-pointer" data-type="jacket">
+                                <img src="https://s.coze.cn/image/seWXIFmTA3M/" alt="外套" class="mx-auto mb-2 w-16 h-16 object-contain">
+                                <p class="font-medium">外套</p>
+                            </div>
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 text-center cursor-pointer" data-type="windbreaker">
+                                <img src="https://s.coze.cn/image/R6f375haFjA/" alt="风衣" class="mx-auto mb-2 w-16 h-16 object-contain">
+                                <p class="font-medium">风衣</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 面料选择 -->
+                    <div id="fabricSection" class="hidden">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center">
+                            <i class="fas fa-th-large text-indigo-500 mr-2"></i>
+                            面料选择 (可多选)
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="fabricOptions">
+                            <!-- 面料选项将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 工艺选项 -->
+                    <div id="processSection" class="hidden">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center">
+                            <i class="fas fa-tools text-indigo-500 mr-2"></i>
+                            工艺选项
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-process="wash">
+                                <div class="flex items-center">
+                                    <img src="https://s.coze.cn/image/qK8Sj-QpGoY/" alt="洗水" class="mr-3 w-12 h-12 object-contain">
+                                    <div>
+                                        <p class="font-medium">洗水</p>
+                                        <p class="text-sm text-gray-500">¥8.00</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 修改印花部分，支持同时选择大印花和小印花 -->
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer col-span-1 md:col-span-2" data-process="print">
+                                <div class="flex flex-col">
+                                    <div class="flex items-center mb-3">
+                                        <img src="https://s.coze.cn/image/z8hz6hNBthk/" alt="印花" class="mr-3 w-12 h-12 object-contain">
+                                        <div>
+                                            <p class="font-medium">印花</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 独立的小印花选项组 -->
+                                    <div class="mb-3 p-3 bg-gray-50 rounded-lg">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <label class="text-sm font-medium">30*30cm内 (¥5.00/个)</label>
+                                            <div class="flex items-center">
+                                                <button class="decrease-btn px-2 py-1 bg-gray-200 rounded-l" data-type="print" data-size="small">-</button>
+                                                <input type="number" class="quantity-input" id="smallPrintQuantity" min="0" value="0" data-type="print" data-size="small">
+                                                <button class="increase-btn px-2 py-1 bg-gray-200 rounded-r" data-type="print" data-size="small">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 独立的大印花选项组 -->
+                                    <div class="p-3 bg-gray-50 rounded-lg">
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-sm font-medium">30*30cm外 (¥10.00/个)</label>
+                                            <div class="flex items-center">
+                                                <button class="decrease-btn px-2 py-1 bg-gray-200 rounded-l" data-type="print" data-size="large">-</button>
+                                                <input type="number" class="quantity-input" id="largePrintQuantity" min="0" value="0" data-type="print" data-size="large">
+                                                <button class="increase-btn px-2 py-1 bg-gray-200 rounded-r" data-type="print" data-size="large">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 修改绣花部分，支持多种规格 -->
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer col-span-1 md:col-span-2" data-process="embroidery">
+                                <div class="flex flex-col">
+                                    <div class="flex items-center mb-3">
+                                        <img src="https://s.coze.cn/image/5w6aizA6lKY/" alt="绣花" class="mr-3 w-12 h-12 object-contain">
+                                        <div>
+                                            <p class="font-medium">绣花</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 绣花规格选项组 -->
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <!-- 10*10cm -->
+                                        <div class="p-3 bg-gray-50 rounded-lg">
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-sm font-medium">10*10cm (¥4.00/个)</label>
+                                                <div class="flex items-center">
+                                                    <button class="decrease-btn px-2 py-1 bg-gray-200 rounded-l" data-type="embroidery" data-size="small">-</button>
+                                                    <input type="number" class="quantity-input" id="smallEmbroideryQuantity" min="0" value="0" data-type="embroidery" data-size="small">
+                                                    <button class="increase-btn px-2 py-1 bg-gray-200 rounded-r" data-type="embroidery" data-size="small">+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 20*20cm -->
+                                        <div class="p-3 bg-gray-50 rounded-lg">
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-sm font-medium">20*20cm (¥8.00/个)</label>
+                                                <div class="flex items-center">
+                                                    <button class="decrease-btn px-2 py-1 bg-gray-200 rounded-l" data-type="embroidery" data-size="medium">-</button>
+                                                    <input type="number" class="quantity-input" id="mediumEmbroideryQuantity" min="0" value="0" data-type="embroidery" data-size="medium">
+                                                    <button class="increase-btn px-2 py-1 bg-gray-200 rounded-r" data-type="embroidery" data-size="medium">+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 30*30cm -->
+                                        <div class="p-3 bg-gray-50 rounded-lg">
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-sm font-medium">30*30cm (¥20.00/个)</label>
+                                                <div class="flex items-center">
+                                                    <button class="decrease-btn px-2 py-1 bg-gray-200 rounded-l" data-type="embroidery" data-size="large">-</button>
+                                                    <input type="number" class="quantity-input" id="largeEmbroideryQuantity" min="0" value="0" data-type="embroidery" data-size="large">
+                                                    <button class="increase-btn px-2 py-1 bg-gray-200 rounded-r" data-type="embroidery" data-size="large">+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 40*50cm -->
+                                        <div class="p-3 bg-gray-50 rounded-lg">
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-sm font-medium">40*50cm (¥38.00/个)</label>
+                                                <div class="flex items-center">
+                                                    <button class="decrease-btn px-2 py-1 bg-gray-200 rounded-l" data-type="embroidery" data-size="xlarge">-</button>
+                                                    <input type="number" class="quantity-input" id="xlargeEmbroideryQuantity" min="0" value="0" data-type="embroidery" data-size="xlarge">
+                                                    <button class="increase-btn px-2 py-1 bg-gray-200 rounded-r" data-type="embroidery" data-size="xlarge">+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 辅料选择 -->
+                    <div id="accessoriesSection" class="hidden">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center">
+                            <i class="fas fa-puzzle-piece text-indigo-500 mr-2"></i>
+                            辅料选择
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-accessory="zipper">
+                                <div class="flex items-center">
+                                    <img src="https://s.coze.cn/image/NKdcxWynsQ0/" alt="拉链" class="mr-3 w-12 h-12 object-contain">
+                                    <div class="flex-1">
+                                        <p class="font-medium">拉链</p>
+                                        <p class="text-sm text-gray-500">¥3.00</p>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label for="zipperQuantity" class="mr-2 text-sm">数量:</label>
+                                        <input type="number" id="zipperQuantity" class="quantity-input" min="1" value="1" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-accessory="rib">
+                                <div class="flex items-center">
+                                    <img src="https://s.coze.cn/image/Ivgb6wwSZDY/" alt="罗纹" class="mr-3 w-12 h-12 object-contain">
+                                    <div class="flex-1">
+                                        <p class="font-medium">罗纹</p>
+                                        <p class="text-sm text-gray-500">¥3.00</p>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label for="ribQuantity" class="mr-2 text-sm">数量:</label>
+                                        <input type="number" id="ribQuantity" class="quantity-input" min="1" value="1" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-accessory="button">
+                                <div class="flex items-center">
+                                    <img src="https://s.coze.cn/image/ENBZHb6MaIE/" alt="纽扣" class="mr-3 w-12 h-12 object-contain">
+                                    <div class="flex-1">
+                                        <p class="font-medium">纽扣</p>
+                                        <p class="text-sm text-gray-500">¥0.50</p>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label for="buttonQuantity" class="mr-2 text-sm">数量:</label>
+                                        <input type="number" id="buttonQuantity" class="quantity-input" min="1" value="1" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-accessory="leatherTag">
+                                <div class="flex items-center">
+                                    <img src="https://s.coze.cn/image/s67B1poUIYc/" alt="皮牌" class="mr-3 w-12 h-12 object-contain">
+                                    <div class="flex-1">
+                                        <p class="font-medium">皮牌</p>
+                                        <p class="text-sm text-gray-500">¥1.00</p>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label for="leatherTagQuantity" class="mr-2 text-sm">数量:</label>
+                                        <input type="number" id="leatherTagQuantity" class="quantity-input" min="1" value="1" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-accessory="package">
+                                <div class="flex items-center">
+                                    <img src="https://s.coze.cn/image/hFaLAyRWQ3A/" alt="包装袋" class="mr-3 w-12 h-12 object-contain">
+                                    <div class="flex-1">
+                                        <p class="font-medium">包装袋</p>
+                                        <p class="text-sm text-gray-500">¥0.50</p>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label for="packageQuantity" class="mr-2 text-sm">数量:</label>
+                                        <input type="number" id="packageQuantity" class="quantity-input" min="1" value="1" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 工费计算 -->
+                    <div id="laborSection" class="hidden">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center">
+                            <i class="fas fa-hands-helping text-indigo-500 mr-2"></i>
+                            工费计算
+                        </h3>
+                        <div class="glassmorphism p-4 rounded-lg">
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">基础工费</label>
+                                <div id="baseLaborCostDisplay" class="text-gray-700">¥0.00</div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">额外拼接</label>
+                                <div class="flex items-center">
+                                    <span class="mr-2">¥4.00/片</span>
+                                    <div class="flex items-center ml-4">
+                                        <button id="decreaseSpliceBtn" class="decrease-btn px-2 py-1 bg-gray-200 rounded-l">-</button>
+                                        <input type="number" id="spliceQuantity" class="quantity-input" min="0" value="0">
+                                        <button id="increaseSpliceBtn" class="increase-btn px-2 py-1 bg-gray-200 rounded-r">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="laborCostDisplay" class="text-right text-lg font-medium text-indigo-600">
+                                工费: ¥0.00
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧结果显示 -->
+                <div>
+                    <div class="glassmorphism p-6 sticky top-24">
+                        <h3 class="text-xl font-semibold mb-6 text-center">成本计算结果</h3>
+                        
+                        <div class="space-y-4 mb-6">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">面料成本:</span>
+                                <span id="fabricCost" class="font-medium">¥0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">工艺成本:</span>
+                                <span id="processCost" class="font-medium">¥0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">辅料成本:</span>
+                                <span id="accessoriesCost" class="font-medium">¥0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">工费:</span>
+                                <span id="laborCost" class="font-medium">¥0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">工厂利润 (10%):</span>
+                                <span id="profitCost" class="font-medium">¥0.00</span>
+                            </div>
+                            <hr class="border-gray-300">
+                            <div class="flex justify-between text-xl font-bold">
+                                <span>采购成本:</span>
+                                <span id="totalCost" class="text-indigo-600">¥0.00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                            <h4 class="font-medium text-blue-800 mb-2 flex items-center">
+                                <i class="fas fa-info-circle mr-2"></i>计算公式
+                            </h4>
+                            <p class="text-gray-700 text-sm">面料 + 工艺 + 辅料 + 工费 + 工厂利润(10%) = 采购成本</p>
+                        </div>
+                        
+                        <div id="costBreakdownButton" class="w-full py-3 bg-gradient-primary text-white font-medium rounded-lg shadow-glow cursor-pointer text-center transition-all hover:shadow-lg transform hover:-translate-y-1">
+                            查看详细成本分析
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 成本明细部分 -->
+    <section id="breakdown" class="container mx-auto py-12 px-4 md:px-8 hidden">
+        <div class="glassmorphism p-8">
+            <h2 class="text-3xl font-bold mb-8 flex items-center">
+                <div class="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white mr-3">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                成本明细分析
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <div class="glassmorphism p-6 mb-8">
+                        <h3 class="text-xl font-semibold mb-4">成本构成</h3>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="costBreakdownChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="glassmorphism p-6">
+                        <h3 class="text-xl font-semibold mb-4">成本优化建议</h3>
+                        <ul class="space-y-3" id="optimizationTips">
+                            <!-- 优化建议将通过JavaScript动态生成 -->
+                        </ul>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="glassmorphism p-6 mb-8">
+                        <h3 class="text-xl font-semibold mb-4">详细计算过程</h3>
+                        <div id="calculationDetails" class="space-y-4">
+                            <!-- 计算过程将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <div class="glassmorphism p-6">
+                        <h3 class="text-xl font-semibold mb-4">选择明细</h3>
+                        <div id="selectedOptions" class="space-y-4">
+                            <!-- 选择明细将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // 数据模型 - 按照用户提供的价格参数更新，增加卫衣类型区分
+        const clothingData = {
+            tshirt: {
+                name: "T恤",
+                baseLaborCost: 8,
+                fabrics: [
+                    { name: "仿棉", price: 12, image: "https://s.coze.cn/image/e3j4E0Ajj2U/" },
+                    { name: "纯棉", price: 27, image: "https://s.coze.cn/image/By0R6GM0g-I/" },
+                    { name: "里布", price: 10, image: "https://s.coze.cn/image/CiQ0gP650WM/" }
+                ]
+            },
+            hoodie: {
+                name: "卫衣",
+                subtypes: {
+                    zipper: {
+                        name: "拉链卫衣",
+                        baseLaborCost: 17,
+                        fabrics: [
+                            { name: "日本卫衣", price: 13, image: "https://s.coze.cn/image/AKbYAtCy4PQ/" },
+                            { name: "仿棉卫衣", price: 20, image: "https://s.coze.cn/image/OcMUMAznGhE/" },
+                            { name: "含棉卫衣", price: 35, image: "https://s.coze.cn/image/EBiFSMQqdoo/" },
+                            { name: "里布", price: 10, image: "https://s.coze.cn/image/P9UftPJWM_k/" }
+                        ]
+                    },
+                    round: {
+                        name: "圆领卫衣",
+                        baseLaborCost: 10,
+                        fabrics: [
+                            { name: "日本卫衣", price: 13, image: "https://s.coze.cn/image/AKbYAtCy4PQ/" },
+                            { name: "仿棉卫衣", price: 20, image: "https://s.coze.cn/image/OcMUMAznGhE/" },
+                            { name: "含棉卫衣", price: 35, image: "https://s.coze.cn/image/EBiFSMQqdoo/" },
+                            { name: "里布", price: 10, image: "https://s.coze.cn/image/P9UftPJWM_k/" }
+                        ]
+                    }
+                }
+            },
+            jeans: {
+                name: "牛仔裤",
+                baseLaborCost: 20,
+                fabrics: [
+                    { name: "硬牛仔", price: 22, image: "https://s.coze.cn/image/ihw9oDevhfE/" },
+                    { name: "软牛仔", price: 18, image: "https://s.coze.cn/image/Te_Owa30Etw/" },
+                    { name: "里布", price: 10, image: "https://s.coze.cn/image/gxu2OoF2BmA/" }
+                ]
+            },
+            jacket: {
+                name: "外套",
+                baseLaborCost: 45,
+                fabrics: [
+                    { name: "硬牛仔", price: 26, image: "https://s.coze.cn/image/8xNRWqo3Le4/" },
+                    { name: "牛津布", price: 30, image: "https://s.coze.cn/image/UllN2uT2jek/" },
+                    { name: "里布", price: 10, image: "https://s.coze.cn/image/5o6ZrZAqvf8/" }
+                ]
+            },
+            windbreaker: {
+                name: "风衣",
+                baseLaborCost: 25,
+                fabrics: [
+                    { name: "梭织风衣", price: 25, image: "https://s.coze.cn/image/_Fj1iECSUOs/" },
+                    { name: "里布", price: 10, image: "https://s.coze.cn/image/LspTnp4UPT4/" }
+                ]
+            }
+        };
+
+        // 更新工艺数据，添加大小区分
+        const processData = {
+            wash: { name: "洗水", price: 8 },
+            print: { 
+                name: "印花", 
+                sizes: {
+                    small: { name: "30*30cm内", price: 5 },
+                    large: { name: "30*30cm外", price: 10 }
+                }
+            },
+            embroidery: { 
+                name: "绣花", 
+                sizes: {
+                    small: { name: "10*10cm", price: 4 },
+                    medium: { name: "20*20cm", price: 8 },
+                    large: { name: "30*30cm", price: 20 },
+                    xlarge: { name: "40*50cm", price: 38 }
+                }
+            }
+        };
+
+        const accessoriesData = {
+            zipper: { name: "拉链", price: 3 },
+            rib: { name: "罗纹", price: 3 },
+            button: { name: "纽扣", price: 0.5 },
+            leatherTag: { name: "皮牌", price: 1 },
+            package: { name: "包装袋", price: 0.5 }
+        };
+
+        // 全局状态
+        let selectedClothingType = null;
+        let selectedHoodieType = null; // 新增：存储选中的卫衣类型
+        let selectedFabrics = []; // 改为数组以支持多选
+        let selectedProcesses = {}; // 改为对象以存储工艺类型、大小和数量
+        let selectedAccessories = {}; // 改为对象以存储辅料类型和数量
+        let spliceQuantity = 0; // 额外拼接数量
+
+        // DOM 元素
+        const clothingTypeOptions = document.getElementById('clothingTypeOptions');
+        const hoodieTypeOptions = document.getElementById('hoodieTypeOptions');
+        const fabricSection = document.getElementById('fabricSection');
+        const fabricOptions = document.getElementById('fabricOptions');
+        const processSection = document.getElementById('processSection');
+        const accessoriesSection = document.getElementById('accessoriesSection');
+        const laborSection = document.getElementById('laborSection');
+        const baseLaborCostDisplay = document.getElementById('baseLaborCostDisplay');
+        const spliceQuantityInput = document.getElementById('spliceQuantity');
+        const decreaseSpliceBtn = document.getElementById('decreaseSpliceBtn');
+        const increaseSpliceBtn = document.getElementById('increaseSpliceBtn');
+        const laborCostDisplay = document.getElementById('laborCostDisplay');
+        const fabricCostEl = document.getElementById('fabricCost');
+        const processCostEl = document.getElementById('processCost');
+        const accessoriesCostEl = document.getElementById('accessoriesCost');
+        const laborCostEl = document.getElementById('laborCost');
+        const profitCostEl = document.getElementById('profitCost');
+        const totalCostEl = document.getElementById('totalCost');
+        const costBreakdownButton = document.getElementById('costBreakdownButton');
+        const breakdownSection = document.getElementById('breakdown');
+
+        // 初始化事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            // 衣服类型选择
+            document.querySelectorAll('#clothingTypeOptions .option-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    // 特殊处理卫衣选项
+                    if (this.dataset.type === 'hoodie') {
+                        // 显示卫衣类型选项
+                        hoodieTypeOptions.classList.toggle('show');
+                        
+                        // 阻止事件冒泡，防止立即选中卫衣
+                        event.stopPropagation();
+                    } else {
+                        // 隐藏卫衣类型选项
+                        hoodieTypeOptions.classList.remove('show');
+                        
+                        // 移除其他选项的选中状态
+                        document.querySelectorAll('#clothingTypeOptions .option-card').forEach(c => {
+                            c.classList.remove('selected');
+                        });
+                        
+                        // 添加当前选项的选中状态
+                        this.classList.add('selected');
+                        
+                        // 更新选中的衣服类型
+                        selectedClothingType = this.dataset.type;
+                        selectedHoodieType = null; // 重置卫衣类型
+                        
+                        // 重置其他选择
+                        selectedFabrics = [];
+                        selectedProcesses = {};
+                        selectedAccessories = {};
+                        spliceQuantity = 0;
+                        
+                        // 重置印花和绣花数量
+                        resetPrintEmbroideryQuantities();
+                        
+                        // 重置额外拼接数量
+                        spliceQuantityInput.value = 0;
+                        
+                        // 显示面料选择部分
+                        fabricSection.classList.remove('hidden');
+                        // 隐藏其他部分
+                        processSection.classList.add('hidden');
+                        accessoriesSection.classList.add('hidden');
+                        laborSection.classList.add('hidden');
+                        
+                        // 生成面料选项
+                        generateFabricOptions(selectedClothingType);
+                        
+                        // 计算并更新成本
+                        calculateCost();
+                    }
+                });
+            });
+            
+            // 卫衣类型选择
+            document.querySelectorAll('.hoodie-type-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    // 阻止事件冒泡
+                    event.stopPropagation();
+                    
+                    // 移除其他卫衣类型的选中状态
+                    document.querySelectorAll('.hoodie-type-option').forEach(o => {
+                        o.classList.remove('selected');
+                    });
+                    
+                    // 添加当前卫衣类型的选中状态
+                    this.classList.add('selected');
+                    
+                    // 更新选中的衣服类型和卫衣类型
+                    selectedClothingType = 'hoodie';
+                    selectedHoodieType = this.dataset.subtype;
+                    
+                    // 选中卫衣卡片
+                    const hoodieCard = document.querySelector('[data-type="hoodie"]');
+                    hoodieCard.classList.add('selected');
+                    
+                    // 重置其他选择
+                    selectedFabrics = [];
+                    selectedProcesses = {};
+                    selectedAccessories = {};
+                    spliceQuantity = 0;
+                    
+                    // 重置印花和绣花数量
+                    resetPrintEmbroideryQuantities();
+                    
+                    // 重置额外拼接数量
+                    spliceQuantityInput.value = 0;
+                    
+                    // 显示面料选择部分
+                    fabricSection.classList.remove('hidden');
+                    // 隐藏其他部分
+                    processSection.classList.add('hidden');
+                    accessoriesSection.classList.add('hidden');
+                    laborSection.classList.add('hidden');
+                    
+                    // 生成面料选项
+                    generateFabricOptions(selectedClothingType);
+                    
+                    // 计算并更新成本
+                    calculateCost();
+                    
+                    // 隐藏卫衣类型选项
+                    hoodieTypeOptions.classList.remove('show');
+                });
+            });
+            
+            // 点击页面其他区域隐藏卫衣类型选项
+            document.addEventListener('click', function(event) {
+                const isClickInsideHoodie = document.querySelector('[data-type="hoodie"]').contains(event.target);
+                const isClickInsideHoodieOptions = hoodieTypeOptions.contains(event.target);
+                
+                if (!isClickInsideHoodie && !isClickInsideHoodieOptions) {
+                    hoodieTypeOptions.classList.remove('show');
+                }
+            });
+            
+            // 额外拼接数量调整
+            decreaseSpliceBtn.addEventListener('click', function() {
+                spliceQuantity = Math.max(0, spliceQuantity - 1);
+                spliceQuantityInput.value = spliceQuantity;
+                calculateLaborCost();
+                calculateCost();
+            });
+            
+            increaseSpliceBtn.addEventListener('click', function() {
+                spliceQuantity += 1;
+                spliceQuantityInput.value = spliceQuantity;
+                calculateLaborCost();
+                calculateCost();
+            });
+            
+            spliceQuantityInput.addEventListener('change', function() {
+                spliceQuantity = Math.max(0, parseInt(this.value) || 0);
+                this.value = spliceQuantity;
+                calculateLaborCost();
+                calculateCost();
+            });
+            
+            // 工艺选项选择 - 洗水
+            document.querySelector('[data-process="wash"]').addEventListener('click', function() {
+                // 切换选中状态
+                this.classList.toggle('selected');
+                
+                // 更新选中的工艺
+                if (this.classList.contains('selected')) {
+                    selectedProcesses.wash = {
+                        type: 'wash',
+                        price: processData.wash.price,
+                        quantity: 1
+                    };
+                } else {
+                    // 取消选中，移除该工艺
+                    delete selectedProcesses.wash;
+                }
+                
+                // 计算并更新成本
+                calculateCost();
+            });
+            
+            // 为印花和绣花的数量输入框添加事件监听器
+            document.querySelectorAll('.quantity-input[data-type="print"], .quantity-input[data-type="embroidery"]').forEach(input => {
+                input.addEventListener('change', function() {
+                    // 确保数量不小于0
+                    const quantity = Math.max(0, parseInt(this.value) || 0);
+                    this.value = quantity;
+                    
+                    // 获取类型和大小
+                    const type = this.dataset.type;
+                    const size = this.dataset.size;
+                    
+                    // 更新选中的工艺
+                    if (quantity > 0) {
+                        const key = `${type}_${size}`;
+                        selectedProcesses[key] = {
+                            type: type,
+                            size: size,
+                            price: processData[type].sizes[size].price,
+                            quantity: quantity
+                        };
+                    } else {
+                        // 如果数量为0，移除该工艺
+                        const key = `${type}_${size}`;
+                        delete selectedProcesses[key];
+                    }
+                    
+                    // 计算并更新成本
+                    calculateCost();
+                });
+            });
+            
+            // 为加减按钮添加事件监听器
+            document.querySelectorAll('.decrease-btn, .increase-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    // 阻止事件冒泡
+                    event.stopPropagation();
+                    
+                    // 获取相关信息
+                    const type = this.dataset.type;
+                    const size = this.dataset.size;
+                    const input = document.querySelector(`.quantity-input[data-type="${type}"][data-size="${size}"]`);
+                    let quantity = parseInt(input.value) || 0;
+                    
+                    // 增加或减少数量
+                    if (this.classList.contains('decrease-btn')) {
+                        quantity = Math.max(0, quantity - 1);
+                    } else {
+                        quantity += 1;
+                    }
+                    
+                    // 更新输入框值
+                    input.value = quantity;
+                    
+                    // 触发change事件
+                    const event = new Event('change');
+                    input.dispatchEvent(event);
+                });
+            });
+            
+            // 辅料选项选择
+            document.querySelectorAll('#accessoriesSection .option-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const accessoryType = this.dataset.accessory;
+                    
+                    // 切换选中状态
+                    this.classList.toggle('selected');
+                    
+                    // 更新选中的辅料
+                    if (this.classList.contains('selected')) {
+                        const quantityInput = this.querySelector('input[type="number"]');
+                        quantityInput.disabled = false;
+                        
+                        quantityInput.addEventListener('change', function() {
+                            // 确保数量至少为1
+                            const quantity = Math.max(1, parseInt(this.value) || 1);
+                            this.value = quantity;
+                            
+                            // 更新选中的辅料数量
+                            selectedAccessories[accessoryType] = {
+                                type: accessoryType,
+                                price: accessoriesData[accessoryType].price,
+                                quantity: quantity
+                            };
+                            
+                            // 计算并更新成本
+                            calculateCost();
+                        });
+                        
+                        // 初始化辅料数量
+                        selectedAccessories[accessoryType] = {
+                            type: accessoryType,
+                            price: accessoriesData[accessoryType].price,
+                            quantity: parseInt(quantityInput.value)
+                        };
+                    } else {
+                        // 取消选中，移除该辅料
+                        delete selectedAccessories[accessoryType];
+                        
+                        // 禁用数量输入
+                        const quantityInput = this.querySelector('input[type="number"]');
+                        quantityInput.disabled = true;
+                    }
+                    
+                    // 计算并更新成本
+                    calculateCost();
+                });
+            });
+            
+            // 成本明细按钮
+            costBreakdownButton.addEventListener('click', function() {
+                breakdownSection.classList.remove('hidden');
+                breakdownSection.scrollIntoView({ behavior: 'smooth' });
+                generateCostBreakdown();
+            });
+            
+            // 移动端导航菜单切换
+            const menuButton = document.getElementById('mobileMenuButton');
+            const mobileMenu = document.getElementById('mobileMenu');
+            
+            menuButton.addEventListener('click', function() {
+                mobileMenu.classList.toggle('active');
+                
+                // 切换图标
+                const icon = this.querySelector('i');
+                if (mobileMenu.classList.contains('active')) {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                } else {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            });
+            
+            // 点击页面其他区域关闭移动端菜单
+            document.addEventListener('click', function(event) {
+                const isClickInsideNav = document.getElementById('mainNav').contains(event.target);
+                
+                if (!isClickInsideNav && mobileMenu.classList.contains('active')) {
+                    mobileMenu.classList.remove('active');
+                    const icon = menuButton.querySelector('i');
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            });
+            
+            // 平滑滚动
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                    
+                    // 点击导航链接后关闭移动端菜单
+                    if (mobileMenu.classList.contains('active')) {
+                        mobileMenu.classList.remove('active');
+                        const icon = menuButton.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                });
+            });
+        });
+
+        // 重置印花和绣花数量
+        function resetPrintEmbroideryQuantities() {
+            document.getElementById('smallPrintQuantity').value = 0;
+            document.getElementById('largePrintQuantity').value = 0;
+            document.getElementById('smallEmbroideryQuantity').value = 0;
+            document.getElementById('mediumEmbroideryQuantity').value = 0;
+            document.getElementById('largeEmbroideryQuantity').value = 0;
+            document.getElementById('xlargeEmbroideryQuantity').value = 0;
+        }
+
+        // 生成面料选项
+        function generateFabricOptions(clothingType) {
+            fabricOptions.innerHTML = '';
+            
+            let fabrics;
+            if (clothingType === 'hoodie' && selectedHoodieType) {
+                // 如果是卫衣且已选择了卫衣类型，使用对应类型的面料
+                fabrics = clothingData[clothingType].subtypes[selectedHoodieType].fabrics;
+            } else {
+                // 否则使用普通面料
+                fabrics = clothingData[clothingType].fabrics;
+            }
+            
+            fabrics.forEach(fabric => {
+                const fabricCard = document.createElement('div');
+                fabricCard.className = 'option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer';
+                fabricCard.dataset.fabric = fabric.name;
+                fabricCard.dataset.price = fabric.price;
+                
+                fabricCard.innerHTML = `
+                    <div class="flex items-center">
+                        <img src="${fabric.image}" alt="${fabric.name}" class="mr-3 w-12 h-12 object-contain">
+                        <div>
+                            <p class="font-medium">${fabric.name}</p>
+                            <p class="text-sm text-gray-500">¥${fabric.price.toFixed(2)}</p>
+                        </div>
+                    </div>
+                `;
+                
+                fabricCard.addEventListener('click', function() {
+                    // 切换选中状态
+                    this.classList.toggle('selected');
+                    
+                    // 更新选中的面料
+                    const fabricName = this.dataset.fabric;
+                    const fabricPrice = parseFloat(this.dataset.price);
+                    
+                    if (this.classList.contains('selected')) {
+                        // 添加面料到选中列表
+                        selectedFabrics.push({
+                            name: fabricName,
+                            price: fabricPrice
+                        });
+                    } else {
+                        // 从选中列表中移除面料
+                        selectedFabrics = selectedFabrics.filter(f => f.name !== fabricName);
+                    }
+                    
+                    // 显示工艺选择部分
+                    processSection.classList.remove('hidden');
+                    // 隐藏其他部分
+                    accessoriesSection.classList.add('hidden');
+                    laborSection.classList.add('hidden');
+                    
+                    // 重置其他选择
+                    selectedProcesses = {};
+                    selectedAccessories = {};
+                    spliceQuantity = 0;
+                    
+                    // 重置印花和绣花数量
+                    resetPrintEmbroideryQuantities();
+                    
+                    // 重置额外拼接数量
+                    spliceQuantityInput.value = 0;
+                    
+                    // 移除洗水选项的选中状态
+                    document.querySelector('[data-process="wash"]').classList.remove('selected');
+                    
+                    // 计算并更新成本
+                    calculateCost();
+                });
+                
+                fabricOptions.appendChild(fabricCard);
+            });
+        }
+
+        // 计算工费
+        function calculateLaborCost() {
+            if (!selectedClothingType) {
+                baseLaborCostDisplay.textContent = '¥0.00';
+                laborCostDisplay.textContent = '工费: ¥0.00';
+                return 0;
+            }
+            
+            let baseLaborCost;
+            
+            // 特殊处理卫衣类型
+            if (selectedClothingType === 'hoodie' && selectedHoodieType) {
+                baseLaborCost = clothingData[selectedClothingType].subtypes[selectedHoodieType].baseLaborCost;
+            } else {
+                baseLaborCost = clothingData[selectedClothingType].baseLaborCost;
+            }
+            
+            // 显示基础工费
+            baseLaborCostDisplay.textContent = `¥${baseLaborCost.toFixed(2)}`;
+            
+            // 计算总人工费用（基础工费 + 额外拼接费用）
+            const laborCost = baseLaborCost + (spliceQuantity * 4);
+            
+            laborCostDisplay.textContent = `工费: ¥${laborCost.toFixed(2)}`;
+            return laborCost;
+        }
+
+        // 计算总成本 - 修复印花和绣花的价格计算逻辑
+        function calculateCost() {
+            // 计算各项成本
+            const fabricCost = selectedFabrics.reduce((sum, fabric) => sum + fabric.price, 0);
+            
+            // 计算工艺成本 - 支持同时选择大小印花和绣花
+            let processCost = 0;
+            for (const processKey in selectedProcesses) {
+                const process = selectedProcesses[processKey];
+                // 确保process和process.price存在
+                if (process && typeof process.price === 'number' && typeof process.quantity === 'number') {
+                    processCost += process.price * process.quantity;
+                }
+            }
+            
+            // 计算辅料成本
+            let accessoriesCost = 0;
+            for (const accessoryType in selectedAccessories) {
+                const accessory = selectedAccessories[accessoryType];
+                accessoriesCost += accessory.price * accessory.quantity;
+            }
+            
+            const laborCost = calculateLaborCost();
+            
+            // 计算小计
+            const subtotal = fabricCost + processCost + accessoriesCost + laborCost;
+            // 计算工厂利润 (10%)，但不低于7-8块的预算
+            const profitCost = Math.max(subtotal * 0.1, 7.5); // 取7-8的平均值
+            // 计算总成本
+            const totalCost = subtotal + profitCost;
+            
+            // 更新显示
+            fabricCostEl.textContent = `¥${fabricCost.toFixed(2)}`;
+            processCostEl.textContent = `¥${processCost.toFixed(2)}`;
+            accessoriesCostEl.textContent = `¥${accessoriesCost.toFixed(2)}`;
+            laborCostEl.textContent = `¥${laborCost.toFixed(2)}`;
+            profitCostEl.textContent = `¥${profitCost.toFixed(2)}`;
+            totalCostEl.textContent = `¥${totalCost.toFixed(2)}`;
+            
+            // 添加动画效果
+            totalCostEl.classList.add('result-animation');
+            setTimeout(() => {
+                totalCostEl.classList.remove('result-animation');
+            }, 500);
+            
+            // 如果已经选择了工艺，显示辅料选择部分
+            if (Object.keys(selectedProcesses).length > 0) {
+                accessoriesSection.classList.remove('hidden');
+                laborSection.classList.add('hidden');
+            }
+            
+            // 如果已经选择了辅料，显示工费计算部分
+            if (Object.keys(selectedAccessories).length > 0) {
+                laborSection.classList.remove('hidden');
+            }
+            
+            return {
+                fabricCost,
+                processCost,
+                accessoriesCost,
+                laborCost,
+                profitCost,
+                totalCost,
+                subtotal
+            };
+        }
+
+        // 生成成本明细
+        function generateCostBreakdown() {
+            const costs = calculateCost();
+            
+            // 生成成本构成图表
+            const ctx = document.getElementById('costBreakdownChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['面料成本', '工艺成本', '辅料成本', '工费', '工厂利润'],
+                    datasets: [{
+                        data: [costs.fabricCost, costs.processCost, costs.accessoriesCost, costs.laborCost, costs.profitCost],
+                        backgroundColor: [
+                            'rgba(79, 70, 229, 0.7)',
+                            'rgba(124, 58, 237, 0.7)',
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(37, 99, 235, 0.7)',
+                            'rgba(99, 102, 241, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(79, 70, 229, 1)',
+                            'rgba(124, 58, 237, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(37, 99, 235, 1)',
+                            'rgba(99, 102, 241, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // 生成计算过程
+            const calculationDetails = document.getElementById('calculationDetails');
+            calculationDetails.innerHTML = `
+                <div class="flex justify-between">
+                    <span>面料成本:</span>
+                    <span>¥${costs.fabricCost.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>工艺成本:</span>
+                    <span>¥${costs.processCost.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>辅料成本:</span>
+                    <span>¥${costs.accessoriesCost.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>工费:</span>
+                    <span>¥${costs.laborCost.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-medium">小计:</span>
+                    <span class="font-medium">¥${costs.subtotal.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>工厂利润 (10%):</span>
+                    <span>¥${costs.profitCost.toFixed(2)}</span>
+                </div>
+                <hr class="border-gray-300">
+                <div class="flex justify-between font-bold">
+                    <span>采购成本:</span>
+                    <span class="text-indigo-600">¥${costs.totalCost.toFixed(2)}</span>
+                </div>
+            `;
+            
+            // 生成选择明细
+            const selectedOptions = document.getElementById('selectedOptions');
+            let optionsHtml = '';
+            
+            if (selectedClothingType) {
+                if (selectedClothingType === 'hoodie' && selectedHoodieType) {
+                    // 显示卫衣类型
+                    optionsHtml += `
+                        <div class="flex justify-between">
+                            <span>衣服类型:</span>
+                            <span class="font-medium">${clothingData[selectedClothingType].subtypes[selectedHoodieType].name}</span>
+                        </div>
+                    `;
+                } else {
+                    optionsHtml += `
+                        <div class="flex justify-between">
+                            <span>衣服类型:</span>
+                            <span class="font-medium">${clothingData[selectedClothingType].name}</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            if (selectedFabrics.length > 0) {
+                const fabricsText = selectedFabrics.map(f => f.name).join(', ');
+                optionsHtml += `
+                    <div class="flex justify-between">
+                        <span>面料:</span>
+                        <span class="font-medium">${fabricsText}</span>
+                    </div>
+                `;
+            }
+            
+            if (Object.keys(selectedProcesses).length > 0) {
+                let processesText = '';
+                for (const processKey in selectedProcesses) {
+                    const process = selectedProcesses[processKey];
+                    if (process.type === 'wash') {
+                        processesText += `${processData[process.type].name} x${process.quantity}, `;
+                    } else {
+                        const sizeName = processData[process.type].sizes[process.size].name;
+                        processesText += `${sizeName} x${process.quantity}, `;
+                    }
+                }
+                processesText = processesText.slice(0, -2); // 移除最后一个逗号和空格
+                
+                optionsHtml += `
+                    <div class="flex justify-between">
+                        <span>工艺:</span>
+                        <span class="font-medium">${processesText}</span>
+                    </div>
+                `;
+            }
+            
+            if (Object.keys(selectedAccessories).length > 0) {
+                let accessoriesText = '';
+                for (const accessoryType in selectedAccessories) {
+                    const accessory = selectedAccessories[accessoryType];
+                    accessoriesText += `${accessoriesData[accessoryType].name} x${accessory.quantity}, `;
+                }
+                accessoriesText = accessoriesText.slice(0, -2); // 移除最后一个逗号和空格
+                
+                optionsHtml += `
+                    <div class="flex justify-between">
+                        <span>辅料:</span>
+                        <span class="font-medium">${accessoriesText}</span>
+                    </div>
+                `;
+            }
+            
+            if (selectedClothingType) {
+                let laborDetails = '';
+                if (selectedClothingType === 'hoodie' && selectedHoodieType) {
+                    laborDetails = `${clothingData[selectedClothingType].subtypes[selectedHoodieType].baseLaborCost}元基础工费`;
+                } else {
+                    laborDetails = `${clothingData[selectedClothingType].baseLaborCost}元基础工费`;
+                }
+                
+                if (spliceQuantity > 0) {
+                    laborDetails += ` + ${spliceQuantity}片额外拼接 (${spliceQuantity * 4}元)`;
+                }
+                
+                optionsHtml += `
+                    <div class="flex justify-between">
+                        <span>工费明细:</span>
+                        <span class="font-medium">${laborDetails}</span>
+                    </div>
+                `;
+            }
+            
+            selectedOptions.innerHTML = optionsHtml || '<p class="text-gray-500 text-center">请先完成服装成本计算</p>';
+            
+            // 生成优化建议
+            const optimizationTips = document.getElementById('optimizationTips');
+            let tipsHtml = '';
+            
+            if (costs.fabricCost > costs.totalCost * 0.4) {
+                tipsHtml += '<li class="flex items-start"><i class="fas fa-lightbulb text-yellow-500 mt-1 mr-2"></i><span>面料成本占比较高，建议考虑性价比更高的面料替代品。</span></li>';
+            }
+            
+            if (costs.processCost > costs.totalCost * 0.2) {
+                tipsHtml += '<li class="flex items-start"><i class="fas fa-lightbulb text-yellow-500 mt-1 mr-2"></i><span>工艺成本占比较高，建议评估是否所有工艺都是必要的，或寻找更高效的工艺方案。</span></li>';
+            }
+            
+            if (costs.laborCost > costs.totalCost * 0.3) {
+                tipsHtml += '<li class="flex items-start"><i class="fas fa-lightbulb text-yellow-500 mt-1 mr-2"></i><span>工费占比较高，建议优化设计复杂度，或考虑减少额外拼接数量。</span></li>';
+            }
+            
+            if (spliceQuantity > 2) {
+                tipsHtml += '<li class="flex items-start"><i class="fas fa-lightbulb text-yellow-500 mt-1 mr-2"></i><span>额外拼接数量较多，建议优化设计以减少拼接，从而降低生产成本。</span></li>';
+            }
+            
+            if (Object.keys(selectedAccessories).length > 3) {
+                tipsHtml += '<li class="flex items-start"><i class="fas fa-lightbulb text-yellow-500 mt-1 mr-2"></i><span>辅料选择较多，建议评估每个辅料的必要性，考虑简化设计。</span></li>';
+            }
+            
+            if (tipsHtml === '') {
+                tipsHtml = '<li class="flex items-start"><i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i><span>成本结构较为合理，建议保持现有方案。</span></li>';
+            }
+            
+            optimizationTips.innerHTML = tipsHtml;
+        }
+    </script>
+</body>
+</html>
